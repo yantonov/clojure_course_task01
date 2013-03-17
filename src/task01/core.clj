@@ -21,40 +21,40 @@
     (ts/attributes node)
     nil))
 
+(defn- submap?
+  "Checks whether given submap is contained inside map."
+  [submap map]
+  (= submap (select-keys map (keys submap))))
+
 (defn- matcher
   "Returns function-matcher. Returns functions take node and returns bool to indicate if mathing by tag and attr map occured."
   [tag-to-match attr-map-to-match]
   (fn [element]
     (and (tag? element)
          (= tag-to-match (ts/tag element))
-         (let [attrs (ts/attributes element)
-               attrs-to-match (seq attr-map-to-match)]
-           (every? #(= (attrs (first %))
-                       (attr-map-to-match (first %)))
-                   attrs-to-match)))))
+         (submap? attr-map-to-match (ts/attributes element)))))
 
 (defn- apply-handlers
   "Apply node-hanlders to given tree"
   [node node-handlers reduce-node-fn reduce-children-fn]
-  (let [h-seq (seq node-handlers)]
-    (if h-seq
-      (let [{matcher :matcher f :fn} (first h-seq)]
-        (if (matcher node)
-          (reduce-node-fn f node
-                          (reduce-children-fn
-                           (map #(apply-handlers %
-                                                 (rest h-seq)
-                                                 reduce-node-fn
-                                                 reduce-children-fn)
-                                (children node))))
-          (reduce-children-fn (map #(apply-handlers %
-                                                    h-seq
-                                                    reduce-node-fn
-                                                    reduce-children-fn)
-                                   (children node)))))
-      nil)))
+  (if-let [h-seq (seq node-handlers)]
+    (let [{matcher :matcher f :fn} (first h-seq)]
+      (if (matcher node)
+        (reduce-node-fn f node
+                        (reduce-children-fn
+                         (map #(apply-handlers %
+                                               (rest h-seq)
+                                               reduce-node-fn
+                                               reduce-children-fn)
+                              (children node))))
+        (reduce-children-fn (map #(apply-handlers %
+                                                  h-seq
+                                                  reduce-node-fn
+                                                  reduce-children-fn)
+                                 (children node)))))
+    nil))
 
-(defn- task-selectors []
+(def ^:private task-selectors
   [{:matcher (matcher :h3 {:class "r"})}
    {:matcher (matcher :a {:class "l"})
     :fn (fn [node] (:href (attributes node)))}])
@@ -75,7 +75,7 @@
 (defn- ad-hoc-tree-walk-solution
   [data]
   (vec (apply-handlers data
-                       (task-selectors)
+                       task-selectors
                        reduce-node-fn
                        reduce-children-fn)))
 
