@@ -6,10 +6,6 @@
   (testing "Links count"
     (is (= (count (get-links)) 10))))
 
-(deftest count-test
-  (testing "Links count"
-    (is (= (count (get-links)) 10))))
-
 (deftest check-links
   (testing "Check all 10 links"
     (let [data (apply hash-set (get-links))]
