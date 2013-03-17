@@ -1,0 +1,5 @@
+# build files
+/target/
+
+# leiningen specific files
+/\.lein-*
