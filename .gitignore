@@ -3,3 +3,6 @@
 
 # leiningen specific files
 /\.lein-*
+
+# emacs backup files
+\#*\#
