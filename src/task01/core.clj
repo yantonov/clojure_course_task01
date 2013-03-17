@@ -72,7 +72,7 @@
   (apply concat children-result)
   )
 
-(defn ad-hoc-tree-walk-solution
+(defn- ad-hoc-tree-walk-solution
   [data]
   (vec (apply-handlers data
                        (task-selectors)
