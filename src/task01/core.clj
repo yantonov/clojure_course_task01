@@ -36,48 +36,34 @@
 
 (defn- apply-handlers
   "Apply node-hanlders to given tree"
-  [node node-handlers reduce-node-fn reduce-children-fn]
-  (if-let [h-seq (seq node-handlers)]
-    (let [{matcher :matcher f :fn} (first h-seq)]
-      (if (matcher node)
-        (reduce-node-fn f node
-                        (reduce-children-fn
-                         (map #(apply-handlers %
-                                               (rest h-seq)
-                                               reduce-node-fn
-                                               reduce-children-fn)
-                              (children node))))
-        (reduce-children-fn (map #(apply-handlers %
-                                                  h-seq
-                                                  reduce-node-fn
-                                                  reduce-children-fn)
-                                 (children node)))))
-    nil))
+  ([node node-handlers]
+     (apply-handlers node node-handlers {}))
+  ([node node-handlers result]
+     (if-let [handlers (seq node-handlers)]
+       (let [{matcher :matcher f :fn} (first handlers)
+             match (matcher node)
+             rest-handlers (if match (rest handlers) handlers)
+             val (if (and match (not (nil? f))) (f node result) result)]
+         (reduce #(apply-handlers %2 rest-handlers %1)
+                 val
+                 (children node))
+         )
+       result))
+  )
 
 (def ^:private task-selectors
   [{:matcher (matcher :h3 {:class "r"})}
    {:matcher (matcher :a {:class "l"})
-    :fn (fn [node] (:href (attributes node)))}])
-
-(defn- reduce-node-fn
-  "Combine result for given node with results for children"
-  [f node children-results]
-  (if (nil? f)
-    children-results
-    (cons (f node) children-results)))
-
-(defn- reduce-children-fn
-  "Reduces result of applying handlers for children."
-  [children-result]
-  (apply concat children-result)
-  )
+    :fn (fn [node result] (assoc result
+                            :links
+                            (cons (:href (attributes node))
+                                  (get result :links '()))))}])
 
 (defn- ad-hoc-tree-walk-solution
   [data]
-  (vec (apply-handlers data
-                       task-selectors
-                       reduce-node-fn
-                       reduce-children-fn)))
+  (let [v (vec (:links (apply-handlers data
+                                       task-selectors)))]
+    (do (println v) v)))
 
 (defn get-links []
   " 1) Find all elements containing {:class \"r\"}.
